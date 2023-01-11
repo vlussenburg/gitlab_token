@@ -2,16 +2,15 @@
 """
 Script that creates Personal Access Token for Gitlab API;
 Tested with:
-- Gitlab Community Edition 10.1.4
-- Gitlab Enterprise Edition 12.6.2
-- Gitlab Enterprise Edition 13.4.4
+- Gitlab Community Edition 15.7
 """
 import sys
 import requests
+import json
 from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 
-endpoint = "http://localhost:10080"
+endpoint = "http://localhost:8080"
 root_route = urljoin(endpoint, "/")
 sign_in_route = urljoin(endpoint, "/users/sign_in")
 pat_route = urljoin(endpoint, "/-/profile/personal_access_tokens")
@@ -37,7 +36,7 @@ def obtain_csrf_token():
 def obtain_authenticity_token(cookies):
     r = requests.get(pat_route, cookies=cookies)
     soup = BeautifulSoup(r.text, "lxml")
-    token = soup.find('input', attrs={'name': 'authenticity_token', 'type': 'hidden'}).get('value')
+    token = soup.find('meta', attrs={'name': 'csrf-token'}).get('value')
     return token
 
 
@@ -64,8 +63,7 @@ def obtain_personal_access_token(name, expires_at, csrf, cookies, authenticity_t
     }
     data.update(csrf)
     r = requests.post(pat_route, data=data, cookies=cookies)
-    soup = BeautifulSoup(r.text, "lxml")
-    token = soup.find('input', id='created-personal-access-token').get('value')
+    token = json.loads(r.text)['new_token']
     return token
 
 
